@@ -29,13 +29,16 @@ def go(args):
     # Drop outliers
     min_price = args.min_price
     max_price = args.max_price
-    idx = df['price'].between(min_price, max_price)
-    df = df[idx].copy()
+    q_host_listings = df['calculated_host_listings_count'].quantile(0.99)
+    q_minimum_nights = df["minimum_nights"].quantile(0.99)
+    df = df.query("@min_price <= price <= @max_price and \
+        minimum_nights < @q_minimum_nights and \
+        calculated_host_listings_count < @q_host_listings and \
+        -74.25 <= longitude <= 73.50 and \
+        40.5 <= latitude <= 41.2").copy()
     # Convert last_review to datetime
     logger.info("Converting 'last_review' column to datetime")
     df['last_review'] = pd.to_datetime(df['last_review'])
-    idx = df['longitude'].between(-74.25, -73.50) & df['latitude'].between(40.5, 41.2)
-    df = df[idx].copy()
 
     logger.info(f"Saving output dataframe as '{args.output_artifact}'")
     df.to_csv(args.output_artifact, index=False)
